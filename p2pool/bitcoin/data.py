@@ -106,6 +106,7 @@ tx_type = pack.ComposedType([
         ('script', pack.VarStrType()),
     ]))),
     ('lock_time', pack.IntType(32)),
+    ('refheight', pack.IntType(32)),
 ])
 
 merkle_link_type = pack.ComposedType([
