@@ -372,8 +372,8 @@ class WorkerBridge(worker_interface.WorkerBridge):
             version=max(self.current_work.value['version'], 0x20000000),
             previous_block=self.current_work.value['previous_block'],
             merkle_link=merkle_link,
-            coinb1=packed_gentx[:-self.COINBASE_NONCE_LENGTH-4],
-            coinb2=packed_gentx[-4:],
+            coinb1=packed_gentx[:-self.COINBASE_NONCE_LENGTH-8], #added field for refHeight into tx
+            coinb2=packed_gentx[-8:],                      #added field for refHeight into tx
             timestamp=self.current_work.value['time'],
             bits=self.current_work.value['bits'],
             share_target=target,
@@ -383,7 +383,7 @@ class WorkerBridge(worker_interface.WorkerBridge):
         
         def got_response(header, user, coinbase_nonce):
             assert len(coinbase_nonce) == self.COINBASE_NONCE_LENGTH
-            new_packed_gentx = packed_gentx[:-self.COINBASE_NONCE_LENGTH-4] + coinbase_nonce + packed_gentx[-4:] if coinbase_nonce != '\0'*self.COINBASE_NONCE_LENGTH else packed_gentx
+            new_packed_gentx = packed_gentx[:-self.COINBASE_NONCE_LENGTH-8] + coinbase_nonce + packed_gentx[-8:] if coinbase_nonce != '\0'*self.COINBASE_NONCE_LENGTH else packed_gentx
             new_gentx = bitcoin_data.tx_type.unpack(new_packed_gentx) if coinbase_nonce != '\0'*self.COINBASE_NONCE_LENGTH else gentx
             
             header_hash = bitcoin_data.hash256(bitcoin_data.block_header_type.pack(header))
