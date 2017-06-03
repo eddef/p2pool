@@ -182,8 +182,8 @@ class NewShare(object):
             
         block_height = parse_bip0034(share_data['coinbase'])[0] # 4 rows added for FRC Parent
         for addr, amount in net.PARENT.TITHE_FUNC(block_height):
-        address = bitcoin_data.human_address_type.unpack(bitcoin_data.base58_decode(addr))
-        amounts[bitcoin_data.pubkey_hash_to_script2(address.pubkey_hash)] = amount
+            address = bitcoin_data.human_address_type.unpack(bitcoin_data.base58_decode(addr))
+            amounts[bitcoin_data.pubkey_hash_to_script2(address.pubkey_hash)] = amount
         
         dests = sorted(amounts.iterkeys(), key=lambda script: (script == DONATION_SCRIPT, amounts[script], script))[-4000:] # block length limit, unlikely to ever be hit
         
