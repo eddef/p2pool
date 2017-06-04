@@ -12,6 +12,29 @@ import p2pool
 from p2pool.bitcoin import data as bitcoin_data, script, sha256
 from p2pool.util import math, forest, pack
 
+def deserialize_bignum(str_, len_):
+    result = 0L
+    for idx in xrange(len_//8):
+        limb, str_ = pack.IntType(64).unpack(str_[:8]), str_[8:]
+        result += limb << (idx * 64)
+    if len_ & 4:
+        limb, str_ = pack.IntType(32).unpack(str_[:4]), str_[4:]
+        result += limb << ((len_ & ~7) * 8)
+    if len_ & 2:
+        limb, str_ = pack.IntType(16).unpack(str_[:2]), str_[2:]
+        result += limb << ((len_ & ~3) * 8)
+    if len_ & 1:
+        limb, str_ = pack.IntType(8).unpack(str_[:1]), str_[1:]
+        result += limb << ((len_ & ~1) * 8)
+    return result
+
+def parse_bip0034f(coinbase): # the f is for freicoin
+    _, opdata = script.parse(coinbase).next()
+    bignum = deserialize_bignum(opdata, len(opdata))
+    if ord(opdata[-1]) & 0x80:
+        bignum = -bignum
+    return (bignum,)
+
 def parse_bip0034(coinbase):
     _, opdata = script.parse(coinbase).next()
     bignum = pack.IntType(len(opdata)*8).unpack(opdata)
@@ -180,7 +203,7 @@ class NewShare(object):
         if sum(amounts.itervalues()) != share_data['subsidy'] or any(x < 0 for x in amounts.itervalues()):
             raise ValueError()
             
-        block_height = parse_bip0034(share_data['coinbase'])[0] # 4 rows added for FRC Parent
+        block_height = parse_bip0034f(share_data['coinbase'])[0] # 4 rows added for FRC Parent
         #for addr, amount in net.PARENT.TITHE_FUNC(block_height):
         #    address = bitcoin_data.human_address_type.unpack(bitcoin_data.base58_decode(addr))
         #    amounts[bitcoin_data.pubkey_hash_to_script2(address.pubkey_hash)] = amount
@@ -261,7 +284,7 @@ class NewShare(object):
         
         assert not self.hash_link['extra_data'], repr(self.hash_link['extra_data'])
         
-        ref_height = parse_bip0034(self.share_info['share_data']['coinbase'])[0] # added for FRC Parent
+        ref_height = parse_bip0034f(self.share_info['share_data']['coinbase'])[0] # added for FRC Parent
         
         self.share_data = self.share_info['share_data']
         self.max_target = self.share_info['max_bits'].target
