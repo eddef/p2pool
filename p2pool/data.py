@@ -197,7 +197,7 @@ class NewShare(object):
             abswork=((previous_share.abswork if previous_share is not None else 0) + bitcoin_data.target_to_average_attempts(bits.target)) % 2**128,
         )
         
-        ref_height =  parse_bip0034f(share_data['coinbase'])[0] 
+        ref_height =  parse_bip0034(share_data['coinbase'])[0] 
         
         gentx = dict(
             version=2, #Freicoin uses version 2 transactions
@@ -256,7 +256,7 @@ class NewShare(object):
         
         assert not self.hash_link['extra_data'], repr(self.hash_link['extra_data'])
         
-        ref_height = parse_bip0034f(self.share_info['share_data']['coinbase'])[0] # added for FRC Parent
+        ref_height = parse_bip0034(self.share_info['share_data']['coinbase'])[0] # added for FRC Parent
         
         self.share_data = self.share_info['share_data']
         self.max_target = self.share_info['max_bits'].target
@@ -522,7 +522,7 @@ class Share(object):
             abswork=((previous_share.abswork if previous_share is not None else 0) + bitcoin_data.target_to_average_attempts(bits.target)) % 2**128,
         )
         
-        ref_height =  parse_bip0034f(share_data['coinbase'])[0] 
+        ref_height =  parse_bip0034(share_data['coinbase'])[0] 
         
         gentx = dict(
             version=2,
