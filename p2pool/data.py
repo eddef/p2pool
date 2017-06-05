@@ -12,29 +12,6 @@ import p2pool
 from p2pool.bitcoin import data as bitcoin_data, script, sha256
 from p2pool.util import math, forest, pack
 
-def deserialize_bignum(str_, len_):
-    result = 0L
-    for idx in xrange(len_//8):
-        limb, str_ = pack.IntType(64).unpack(str_[:8]), str_[8:]
-        result += limb << (idx * 64)
-    if len_ & 4:
-        limb, str_ = pack.IntType(32).unpack(str_[:4]), str_[4:]
-        result += limb << ((len_ & ~7) * 8)
-    if len_ & 2:
-        limb, str_ = pack.IntType(16).unpack(str_[:2]), str_[2:]
-        result += limb << ((len_ & ~3) * 8)
-    if len_ & 1:
-        limb, str_ = pack.IntType(8).unpack(str_[:1]), str_[1:]
-        result += limb << ((len_ & ~1) * 8)
-    return result
-
-def parse_bip0034f(coinbase): # the f is for freicoin
-    _, opdata = script.parse(coinbase).next()
-    bignum = deserialize_bignum(opdata, len(opdata))
-    if ord(opdata[-1]) & 0x80:
-        bignum = -bignum
-    return (bignum,)
-
 def parse_bip0034(coinbase):
     _, opdata = script.parse(coinbase).next()
     bignum = pack.IntType(len(opdata)*8).unpack(opdata)
@@ -202,11 +179,6 @@ class NewShare(object):
         
         if sum(amounts.itervalues()) != share_data['subsidy'] or any(x < 0 for x in amounts.itervalues()):
             raise ValueError()
-            
-        block_height = parse_bip0034f(share_data['coinbase'])[0] # 4 rows added for FRC Parent
-        #for addr, amount in net.PARENT.TITHE_FUNC(block_height):
-        #    address = bitcoin_data.human_address_type.unpack(bitcoin_data.base58_decode(addr))
-        #    amounts[bitcoin_data.pubkey_hash_to_script2(address.pubkey_hash)] = amount
         
         dests = sorted(amounts.iterkeys(), key=lambda script: (script == DONATION_SCRIPT, amounts[script], script))[-4000:] # block length limit, unlikely to ever be hit
         
@@ -225,7 +197,7 @@ class NewShare(object):
             abswork=((previous_share.abswork if previous_share is not None else 0) + bitcoin_data.target_to_average_attempts(bits.target)) % 2**128,
         )
         
-        ref_height = block_height
+        ref_height =  parse_bip0034f(share_data['coinbase'])[0] 
         
         gentx = dict(
             version=2, #Freicoin uses version 2 transactions
@@ -239,7 +211,7 @@ class NewShare(object):
                 script='\x6a\x28' + cls.get_ref_hash(net, share_info, ref_merkle_link) + pack.IntType(64).pack(last_txout_nonce),
             )],
             lock_time=0,
-            refheight=ref_height
+            refheight=ref_height,
         )
         
         def get_share(header, last_txout_nonce=last_txout_nonce):
@@ -550,8 +522,10 @@ class Share(object):
             abswork=((previous_share.abswork if previous_share is not None else 0) + bitcoin_data.target_to_average_attempts(bits.target)) % 2**128,
         )
         
+        ref_height =  parse_bip0034f(share_data['coinbase'])[0] 
+        
         gentx = dict(
-            version=1,
+            version=2,
             tx_ins=[dict(
                 previous_output=None,
                 sequence=None,
@@ -562,6 +536,7 @@ class Share(object):
                 script='\x6a\x28' + cls.get_ref_hash(net, share_info, ref_merkle_link) + pack.IntType(64).pack(last_txout_nonce),
             )],
             lock_time=0,
+            refheight=ref_height,
         )
         
         def get_share(header, last_txout_nonce=last_txout_nonce):
