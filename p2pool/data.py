@@ -598,9 +598,11 @@ class Share(object):
                 n.add(tx_count)
         assert n == set(range(len(self.share_info['new_transaction_hashes'])))
         
+        ref_height = parse_bip0034(self.share_info['share_data']['coinbase'])[0] # added for FRC Parent
+        
         self.gentx_hash = check_hash_link(
             self.hash_link,
-            self.get_ref_hash(net, self.share_info, contents['ref_merkle_link']) + pack.IntType(64).pack(self.contents['last_txout_nonce']) + pack.IntType(32).pack(0),
+            self.get_ref_hash(net, self.share_info, contents['ref_merkle_link']) + pack.IntType(64).pack(self.contents['last_txout_nonce']) + pack.IntType(32).pack(0) + pack.IntType(32).pack(ref_height),
             self.gentx_before_refhash,
         )
         merkle_root = bitcoin_data.check_merkle_link(self.gentx_hash, self.merkle_link)
